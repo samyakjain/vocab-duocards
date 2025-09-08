@@ -1,0 +1,385 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vocab DuoCards</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg1: 255, 99, 135;
+      --bg2: 90, 163, 255;
+      --card: 255,255,255;
+      --ink: 20, 24, 33;
+      --muted: 110, 120, 140;
+      --accent: 64, 128, 255;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: rgb(var(--ink));
+      background: linear-gradient(135deg, rgba(var(--bg1),0.15), rgba(var(--bg2),0.15));
+      background-attachment: fixed;
+    }
+    .app {
+      min-height: 100%;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 16px;
+      padding: clamp(12px, 2vw, 24px);
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      font-size: clamp(18px, 2.4vw, 24px);
+    }
+    .brand-badge {
+      width: 36px; height: 36px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(var(--bg1),1), rgba(var(--bg2),1));
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    }
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    button, .chip {
+      appearance: none;
+      border: none;
+      background: rgba(255,255,255,0.7);
+      color: rgb(var(--ink));
+      border-radius: 14px;
+      padding: 10px 14px;
+      font-weight: 600;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08), inset 0 0 0 1px rgba(0,0,0,0.05);
+      transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+      cursor: pointer;
+    }
+    button:active { transform: translateY(1px) scale(0.99); }
+    button.primary {
+      background: rgb(var(--accent));
+      color: white;
+      box-shadow: 0 10px 22px rgba(64,128,255,0.35);
+    }
+    .pill {
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 12px;
+      background: rgba(255,255,255,0.6);
+      color: rgb(var(--muted));
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .deck {
+      position: relative;
+      display: grid;
+      place-items: center;
+      padding: clamp(6px, 1.5vw, 12px);
+    }
+    .card {
+      position: relative;
+      width: min(640px, 100%);
+      min-height: 240px;
+      background: rgba(var(--card),0.86);
+      border-radius: 22px;
+      padding: clamp(16px, 4vw, 28px);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.16);
+      backdrop-filter: blur(8px);
+      perspective: 1200px;
+    }
+    /* .card.flipped { transform: rotateY(180deg); } */
+    .face {
+      position: absolute;
+      inset: 0;
+      padding: inherit;
+      backface-visibility: hidden;
+      display: grid;
+      gap: 12px;
+      grid-template-rows: auto 1fr auto;
+    }
+    .back { transform: rotateY(180deg); }
+
+    .word {
+      font-size: clamp(28px, 6vw, 44px);
+      line-height: 1.1;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .meaning {
+      font-size: clamp(16px, 3.4vw, 20px);
+      color: rgb(var(--ink));
+      opacity: 0.9;
+    }
+    .example {
+      margin-top: 8px;
+      font-size: clamp(14px, 3vw, 18px);
+      color: rgb(var(--muted));
+    }
+    .example b { color: rgb(var(--ink)); }
+    .progress {
+      width: 100%;
+      height: 10px;
+      background: rgba(0,0,0,0.06);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .bar { height: 100%; background: linear-gradient(90deg, rgba(var(--bg1),1), rgba(var(--bg2),1)); width: 0%; }
+    .footer {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .footer .left, .footer .right { display: flex; gap: 8px; align-items: center; }
+    .stat { font-weight: 700; color: rgb(var(--muted)); font-size: 12px; }
+    .kbd {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      background: rgba(0,0,0,0.06);
+      padding: 2px 6px; border-radius: 6px;
+      font-size: 12px;
+    }
+    .card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.5s ease;
+      transform-style: preserve-3d;
+    }
+
+    .card.flipped .card-inner {
+      transform: rotateY(180deg);
+    }
+    /* Mobile optimizations */
+    @media (max-width: 480px) {
+      .controls { gap: 6px; }
+      button { padding: 10px 12px; }
+      .footer { grid-template-columns: 1fr; gap: 12px; }
+      .footer .left, .footer .right { justify-content: space-between; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <div class="brand-badge"></div>
+        WordFlip
+      </div>
+      <div class="controls">
+        <span id="counter" class="pill">0 / 0</span>
+        <button id="shuffle">Shuffle</button>
+        <button id="reset" class="primary">Reset</button>
+      </div>
+    </header>
+
+    <main class="deck">
+      <div id="card" class="card" role="button" aria-label="Flashcard (tap to flip)" tabindex="0">
+         <div class="card-inner">
+          <div class="face front">
+          <div class="pill">Word</div>
+          <div class="word" id="wordText">—</div>
+          <div class="footer">
+            <div class="left">
+              <span class="stat">Tap to see meaning</span>
+            </div>
+            <div class="right">
+              <button id="knowBtn" class="primary" title="I knew this (K)">
+                I knew it
+              </button>
+              <button id="nextBtn" title="Next (→)">Next</button>
+            </div>
+            <div class="progress"><div id="bar" class="bar"></div></div>
+          </div>
+          </div>
+          <div class="face back">
+          <div class="pill">Meaning</div>
+          <div class="meaning" id="meaningText">—</div>
+          <div class="example" id="exampleText"></div>
+          <div class="footer">
+            <div class="left">
+              <span class="stat"><span id="knownCount">0</span> known</span>
+            </div>
+            <div class="right">
+              <button id="againBtn" title="Flip back (Space)">Back</button>
+              <button id="nextBtn2" class="primary" title="Next (→)">Next</button>
+            </div>
+            <div class="progress"><div id="bar2" class="bar"></div></div>
+          </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer style="display:flex;justify-content: space-around;gap:12px;flex-wrap:wrap;">
+      <div style="display:flex; gap:8px; align-items:center;">
+        <input id="fileInput" type="file" accept=".csv" style="display:none;">
+        <span class="stat">Shortcuts: <span class="kbd">Space</span> flip, <span class="kbd">→</span> next, <span class="kbd">K</span> knew it</span>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // Embedded data read from your CSV at build time:
+    const WORDS = [{'Word': 'acknowledge', 'Meaning': 'To recognize or admit something', 'Example Usage': 'Could you acknowledge receipt of the email I sent?'}, {'Word': 'agenda', 'Meaning': 'A list of topics to discuss', 'Example Usage': "What's on the meeting agenda today?"}, {'Word': 'appreciate', 'Meaning': 'To be grateful or thankful', 'Example Usage': 'I really appreciate your help with the project.'}, {'Word': 'apologize', 'Meaning': 'To express regret for something', 'Example Usage': 'I apologize for being late to the meeting.'}, {'Word': 'barista', 'Meaning': 'A person who prepares coffee drinks', 'Example Usage': 'Can you ask the barista for a decaf latte?'}, {'Word': 'clarify', 'Meaning': 'To make something clearer', 'Example Usage': "Could you clarify what you mean by 'tight deadline'?"}, {'Word': 'colleague', 'Meaning': 'A person you work with', 'Example Usage': 'My colleague is handling the client presentation.'}, {'Word': 'compliment', 'Meaning': 'To praise or express admiration', 'Example Usage': 'You did a great job on the report—nice work!'}, {'Word': 'coordinate', 'Meaning': 'To organize or arrange', 'Example Usage': 'Let’s coordinate a time for the team lunch.'}, {'Word': 'courteous', 'Meaning': 'Polite and respectful', 'Example Usage': 'The cashier was very courteous during checkout.'}, {'Word': 'deadline', 'Meaning': 'A time or date by which something must be completed', 'Example Usage': 'The project deadline is next Friday.'}, {'Word': 'discount', 'Meaning': 'A reduction in price', 'Example Usage': 'Can you apply the student discount to my purchase?'}, {'Word': 'efficient', 'Meaning': 'Working in a well-organized way', 'Example Usage': 'This new software makes our work more efficient.'}, {'Word': 'escalate', 'Meaning': 'To increase in intensity or seriousness', 'Example Usage': 'I’ll need to escalate this issue to the manager.'}, {'Word': 'feedback', 'Meaning': 'Comments or suggestions for improvement', 'Example Usage': 'Can you give me feedback on my draft?'}, {'Word': 'flexible', 'Meaning': 'Able to adapt or change', 'Example Usage': 'My schedule is flexible this week—when’s good for you?'}, {'Word': 'gratitude', 'Meaning': 'The feeling of being thankful', 'Example Usage': 'I want to express my gratitude for your support.'}, {'Word': 'initiative', 'Meaning': 'Taking action without being asked', 'Example Usage': 'She showed great initiative by starting the project early.'}, {'Word': 'inquire', 'Meaning': 'To ask for information', 'Example Usage': 'I’d like to inquire about your return policy.'}, {'Word': 'interrupt', 'Meaning': 'To break into a conversation', 'Example Usage': 'Sorry to interrupt, but we’re running out of time.'}, {'Word': 'invoice', 'Meaning': 'A bill for goods or services', 'Example Usage': 'Can you send me the invoice for last month’s order?'}, {'Word': 'multitask', 'Meaning': 'To do several tasks at once', 'Example Usage': 'I’m used to multitasking during busy shifts.'}, {'Word': 'network', 'Meaning': 'To connect with people professionally', 'Example Usage': 'I met some great contacts while networking at the event.'}, {'Word': 'overwhelmed', 'Meaning': 'Feeling unable to cope due to excess', 'Example Usage': 'I’m a bit overwhelmed with all these emails.'}, {'Word': 'polite', 'Meaning': 'Showing good manners', 'Example Usage': 'He was polite and held the door for me.'}, {'Word': 'prioritize', 'Meaning': 'To decide what is most important', 'Example Usage': 'We need to prioritize the urgent tasks first.'}, {'Word': 'prompt', 'Meaning': 'Done quickly or on time', 'Example Usage': 'Thanks for your prompt response to my question.'}, {'Word': 'recommend', 'Meaning': 'To suggest something', 'Example Usage': 'Can you recommend a good restaurant nearby?'}, {'Word': 'reliable', 'Meaning': 'Dependable and trustworthy', 'Example Usage': 'She’s a reliable team member who always delivers.'}, {'Word': 'reschedule', 'Meaning': 'To arrange for a different time', 'Example Usage': 'Can we reschedule our meeting for tomorrow?'}, {'Word': 'resolve', 'Meaning': 'To find a solution', 'Example Usage': 'Let’s resolve this issue before the client call.'}, {'Word': 'sincere', 'Meaning': 'Honest and genuine', 'Example Usage': 'Her apology seemed very sincere.'}, {'Word': 'suggest', 'Meaning': 'To propose an idea', 'Example Usage': 'I suggest we meet at the café on Main Street.'}, {'Word': 'supervisor', 'Meaning': 'A person who oversees work', 'Example Usage': 'My supervisor approved the budget yesterday.'}, {'Word': 'sympathetic', 'Meaning': 'Showing understanding or compassion', 'Example Usage': 'She was sympathetic when I explained my situation.'}, {'Word': 'tentative', 'Meaning': 'Not certain or fixed', 'Example Usage': 'I have a tentative plan to visit the mall later.'}, {'Word': 'update', 'Meaning': 'To provide the latest information', 'Example Usage': 'Can you update me on the project’s progress?'}, {'Word': 'urgent', 'Meaning': 'Needing immediate attention', 'Example Usage': 'This is an urgent request—please review it today.'}, {'Word': 'vague', 'Meaning': 'Not clear or specific', 'Example Usage': 'His instructions were a bit vague—can you clarify?'}, {'Word': 'accommodate', 'Meaning': 'To make room or adjust for', 'Example Usage': 'Can you accommodate a party of six at 7 PM?'}, {'Word': 'casual', 'Meaning': 'Relaxed or informal', 'Example Usage': 'Let’s keep the meeting casual and open.'}, {'Word': 'confirm', 'Meaning': 'To verify or make certain', 'Example Usage': 'Please confirm your appointment time.'}, {'Word': 'convenient', 'Meaning': 'Suitable or easy', 'Example Usage': 'Is 3 PM convenient for you?'}, {'Word': 'courtesy', 'Meaning': 'Polite behavior', 'Example Usage': 'The waiter showed great courtesy during our meal.'}, {'Word': 'customize', 'Meaning': 'To tailor to specific needs', 'Example Usage': 'Can you customize my coffee order with oat milk?'}, {'Word': 'delegate', 'Meaning': 'To assign tasks to others', 'Example Usage': 'I’ll delegate the research to the new intern.'}, {'Word': 'discrepancy', 'Meaning': 'A difference or inconsistency', 'Example Usage': 'There’s a discrepancy in the billing—can you check?'}, {'Word': 'engaging', 'Meaning': 'Interesting or captivating', 'Example Usage': 'Her presentation was very engaging.'}, {'Word': 'navigate', 'Meaning': 'To find your way through', 'Example Usage': 'I’ll navigate the team through the new software.'}, {'Word': 'proactive', 'Meaning': 'Taking action in advance', 'Example Usage': 'Let’s be proactive and address the issue now.'}, {'Word': 'acquaintance', 'Meaning': 'A person you know but not closely', 'Example Usage': 'I ran into an acquaintance at the mall yesterday.'}, {'Word': 'ambiguous', 'Meaning': 'Open to more than one interpretation', 'Example Usage': 'His response was ambiguous—can you ask for details?'}, {'Word': 'anticipate', 'Meaning': 'To expect or predict', 'Example Usage': 'I anticipate the meeting will take about an hour.'}, {'Word': 'apologetic', 'Meaning': 'Showing regret or remorse', 'Example Usage': 'She was apologetic for missing the deadline.'}, {'Word': 'assertive', 'Meaning': 'Confident and direct in expressing oneself', 'Example Usage': 'Try to be assertive when discussing your ideas.'}, {'Word': 'assistance', 'Meaning': 'Help or support', 'Example Usage': 'Can you offer assistance with setting up the event?'}, {'Word': 'authentic', 'Meaning': 'Genuine or real', 'Example Usage': 'The restaurant serves authentic Italian pizza.'}, {'Word': 'availability', 'Meaning': 'The state of being free or accessible', 'Example Usage': 'Can you check your availability for next week?'}, {'Word': 'budget', 'Meaning': 'An estimate of income and expenses', 'Example Usage': 'We need to stay within the project budget.'}, {'Word': 'collaborate', 'Meaning': 'To work together on a task', 'Example Usage': 'Let’s collaborate on the marketing campaign.'}, {'Word': 'commute', 'Meaning': 'Travel between home and work', 'Example Usage': 'My commute to the office takes 30 minutes.'}, {'Word': 'complaint', 'Meaning': 'An expression of dissatisfaction', 'Example Usage': 'I have a complaint about the food quality.'}, {'Word': 'confidential', 'Meaning': 'Intended to be private', 'Example Usage': 'This report is confidential—please don’t share it.'}, {'Word': 'convenience', 'Meaning': 'Ease or suitability', 'Example Usage': 'The café’s location is perfect for convenience.'}, {'Word': 'courtyard', 'Meaning': 'An open area surrounded by buildings', 'Example Usage': 'Let’s meet in the courtyard for lunch.'}, {'Word': 'customary', 'Meaning': 'Usual or traditional', 'Example Usage': 'It’s customary to tip the waiter here.'}, {'Word': 'decaf', 'Meaning': 'Coffee without caffeine', 'Example Usage': 'Can you make my latte decaf, please?'}, {'Word': 'dispute', 'Meaning': 'A disagreement or argument', 'Example Usage': 'There was a dispute over the invoice amount.'}, {'Word': 'eager', 'Meaning': 'Enthusiastic or excited', 'Example Usage': 'I’m eager to try the new restaurant downtown.'}, {'Word': 'empathetic', 'Meaning': 'Showing understanding of others’ feelings', 'Example Usage': 'She was empathetic when I shared my concerns.'}, {'Word': 'encourage', 'Meaning': 'To give support or confidence', 'Example Usage': 'I encourage you to share your ideas in the meeting.'}, {'Word': 'estimate', 'Meaning': 'An approximate calculation', 'Example Usage': 'Can you give me an estimate for the repair costs?'}, {'Word': 'exceed', 'Meaning': 'To go beyond expectations', 'Example Usage': 'The team’s performance exceeded our goals.'}, {'Word': 'expedite', 'Meaning': 'To speed up a process', 'Example Usage': 'Can you expedite the delivery of my order?'}, {'Word': 'familiar', 'Meaning': 'Well-known or recognizable', 'Example Usage': 'This place looks familiar—have we been here before?'}, {'Word': 'feasible', 'Meaning': 'Possible to do', 'Example Usage': 'Is it feasible to finish the project by Friday?'}, {'Word': 'greet', 'Meaning': 'To welcome or acknowledge someone', 'Example Usage': 'She greeted me warmly at the café.'}, {'Word': 'hassle', 'Meaning': 'An inconvenience or annoyance', 'Example Usage': 'Returning this item was such a hassle.'}, {'Word': 'improvise', 'Meaning': 'To create or perform spontaneously', 'Example Usage': 'We had to improvise when the projector failed.'}, {'Word': 'inconvenience', 'Meaning': 'Causing trouble or difficulty', 'Example Usage': 'Sorry for the inconvenience—our system is down.'}, {'Word': 'inspire', 'Meaning': 'To motivate or encourage', 'Example Usage': 'Her speech inspired me to take action.'}, {'Word': 'intuitive', 'Meaning': 'Easy to understand or use', 'Example Usage': 'The new app is very intuitive to navigate.'}, {'Word': 'leisure', 'Meaning': 'Free time for enjoyment', 'Example Usage': 'I like to read during my leisure time.'}, {'Word': 'mandatory', 'Meaning': 'Required or compulsory', 'Example Usage': 'Attendance at the training is mandatory.'}, {'Word': 'memorable', 'Meaning': 'Worth remembering', 'Example Usage': 'The party at the mall was memorable.'}, {'Word': 'negotiation', 'Meaning': 'A discussion to reach an agreement', 'Example Usage': 'The salary negotiation went well.'}, {'Word': 'overdue', 'Meaning': 'Late or past the due date', 'Example Usage': 'The payment is overdue—can you settle it today?'}, {'Word': 'patience', 'Meaning': 'The ability to wait calmly', 'Example Usage': 'Thanks for your patience while we fix the issue.'}, {'Word': 'pending', 'Meaning': 'Awaiting action or completion', 'Example Usage': 'The order is still pending confirmation.'}, {'Word': 'pleasant', 'Meaning': 'Enjoyable or agreeable', 'Example Usage': 'The barista was very pleasant to chat with.'}, {'Word': 'precise', 'Meaning': 'Exact or accurate', 'Example Usage': 'Can you give me precise directions to the store?'}, {'Word': 'promote', 'Meaning': 'To advance or support', 'Example Usage': 'She was promoted to team leader last week.'}, {'Word': 'reassure', 'Meaning': 'To comfort or restore confidence', 'Example Usage': 'He reassured me that the issue was resolved.'}, {'Word': 'refreshing', 'Meaning': 'Pleasantly new or different', 'Example Usage': 'The iced tea was so refreshing on a hot day.'}, {'Word': 'satisfactory', 'Meaning': 'Meeting expectations', 'Example Usage': 'The service at the restaurant was satisfactory.'}, {'Word': 'spontaneous', 'Meaning': 'Unplanned or impulsive', 'Example Usage': 'Let’s make a spontaneous trip to the mall!'}, {'Word': 'streamline', 'Meaning': 'To make more efficient', 'Example Usage': 'We need to streamline the ordering process.'}, {'Word': 'transparent', 'Meaning': 'Clear and open', 'Example Usage': 'The manager was transparent about the budget cuts.'}, {'Word': 'versatile', 'Meaning': 'Able to adapt to many functions', 'Example Usage': 'This jacket is versatile for both work and casual outings.'}, {'Word': 'accountable', 'Meaning': 'Responsible for actions', 'Example Usage': 'Everyone is accountable for meeting the deadline.'}, {'Word': 'adapt', 'Meaning': 'To adjust to new conditions', 'Example Usage': 'I’ll adapt my schedule to join the meeting.'}, {'Word': 'affordable', 'Meaning': 'Reasonably priced', 'Example Usage': 'This store has affordable clothing options.'}, {'Word': 'ambiance', 'Meaning': 'The atmosphere of a place', 'Example Usage': 'The café’s ambiance is cozy and inviting.'}, {'Word': 'articulate', 'Meaning': 'To express clearly', 'Example Usage': 'She articulated her concerns during the discussion.'}, {'Word': 'assure', 'Meaning': 'To confirm or guarantee', 'Example Usage': 'I assure you the package will arrive tomorrow.'}, {'Word': 'balance', 'Meaning': 'To manage or equalize', 'Example Usage': 'I’m trying to balance work and personal life.'}, {'Word': 'banter', 'Meaning': 'Playful conversation', 'Example Usage': 'We had some fun banter at the coffee shop.'}, {'Word': 'brainstorm', 'Meaning': 'To generate ideas collaboratively', 'Example Usage': 'Let’s brainstorm some marketing strategies.'}, {'Word': 'browse', 'Meaning': 'To look casually at items', 'Example Usage': 'I’m just browsing the store for now.'}, {'Word': 'candid', 'Meaning': 'Honest and straightforward', 'Example Usage': 'His candid feedback helped improve the project.'}, {'Word': 'capacity', 'Meaning': 'The ability to hold or handle', 'Example Usage': 'The restaurant is at full capacity tonight.'}, {'Word': 'casualty', 'Meaning': 'An unexpected negative outcome', 'Example Usage': 'The delay was a casualty of poor planning.'}, {'Word': 'clarification', 'Meaning': 'The act of making clear', 'Example Usage': 'I need clarification on the new policy.'}, {'Word': 'cohesive', 'Meaning': 'Well-integrated or unified', 'Example Usage': 'The team’s cohesive effort led to success.'}, {'Word': 'commence', 'Meaning': 'To begin', 'Example Usage': 'The meeting will commence at 9 AM.'}, {'Word': 'commitment', 'Meaning': 'A promise or dedication', 'Example Usage': 'Her commitment to the project is inspiring.'}, {'Word': 'compatible', 'Meaning': 'Working well together', 'Example Usage': 'This software is compatible with our system.'}, {'Word': 'congratulate', 'Meaning': 'To praise for an achievement', 'Example Usage': 'I want to congratulate you on your promotion.'}, {'Word': 'consensus', 'Meaning': 'General agreement', 'Example Usage': 'We reached a consensus on the budget plan.'}, {'Word': 'conveniently', 'Meaning': 'In a way that is easy or suitable', 'Example Usage': 'The store is conveniently located near the station.'}, {'Word': 'cooperative', 'Meaning': 'Working together willingly', 'Example Usage': 'The team was cooperative during the audit.'}, {'Word': 'courteously', 'Meaning': 'In a polite manner', 'Example Usage': 'She courteously held the door for me.'}, {'Word': 'creative', 'Meaning': 'Having original ideas', 'Example Usage': 'His creative solution saved the project.'}, {'Word': 'credentials', 'Meaning': 'Qualifications or proof of ability', 'Example Usage': 'Please provide your credentials for the job.'}, {'Word': 'cue', 'Meaning': 'A signal to act', 'Example Usage': 'I’ll take my cue from the manager’s feedback.'}, {'Word': 'custom', 'Meaning': 'Personalized or made-to-order', 'Example Usage': 'Can you make a custom cake for the party?'}, {'Word': 'deadline-driven', 'Meaning': 'Focused on meeting deadlines', 'Example Usage': 'This is a deadline-driven project—stay on track.'}, {'Word': 'decline', 'Meaning': 'To politely refuse', 'Example Usage': 'I’ll have to decline the invitation due to work.'}, {'Word': 'dedicated', 'Meaning': 'Committed to a task', 'Example Usage': 'She’s a dedicated employee who never misses a deadline.'}, {'Word': 'defer', 'Meaning': 'To delay or postpone', 'Example Usage': 'Can we defer the meeting to next week?'}, {'Word': 'delighted', 'Meaning': 'Very pleased', 'Example Usage': 'I’m delighted to hear about your new job!'}, {'Word': 'dependable', 'Meaning': 'Trustworthy and reliable', 'Example Usage': 'He’s a dependable colleague for urgent tasks.'}, {'Word': 'disrupt', 'Meaning': 'To interrupt or disturb', 'Example Usage': 'Sorry to disrupt, but we have an update.'}, {'Word': 'diverse', 'Meaning': 'Varied or different', 'Example Usage': 'The team has diverse skills that complement each other.'}, {'Word': 'dynamic', 'Meaning': ' Energetic or changing', 'Example Usage': 'The presentation was dynamic and kept everyone engaged.'}, {'Word': 'elaborate', 'Meaning': 'To explain in detail', 'Example Usage': 'Can you elaborate on your plan for the event?'}, {'Word': 'elevate', 'Meaning': 'To improve or raise', 'Example Usage': 'This feedback will elevate the quality of our work.'}, {'Word': 'empower', 'Meaning': 'To give authority or confidence', 'Example Usage': 'The training empowered me to lead the project.'}, {'Word': 'endorse', 'Meaning': 'To support or recommend', 'Example Usage': 'I endorse her for the team leader role.'}, {'Word': 'enquire', 'Meaning': 'To ask for information', 'Example Usage': 'I’d like to enquire about the store’s hours.'}, {'Word': 'enthusiastic', 'Meaning': 'Showing excitement', 'Example Usage': 'She was enthusiastic about the new café opening.'}, {'Word': 'espresso', 'Meaning': 'A strong coffee drink', 'Example Usage': 'Can you make a quick espresso for me?'}, {'Word': 'exceptional', 'Meaning': 'Outstanding or unusual', 'Example Usage': 'The service at the restaurant was exceptional.'}, {'Word': 'facilitate', 'Meaning': 'To make easier', 'Example Usage': 'I’ll facilitate the discussion during the meeting.'}, {'Word': 'favorable', 'Meaning': 'Positive or advantageous', 'Example Usage': 'The feedback on our proposal was favorable.'}, {'Word': 'flattered', 'Meaning': 'Feeling pleased by praise', 'Example Usage': 'I’m flattered by your kind words about my work.'}, {'Word': 'fluent', 'Meaning': 'Speaking smoothly and easily', 'Example Usage': 'She’s fluent in professional English.'}, {'Word': 'follow-up', 'Meaning': 'An action to check progress', 'Example Usage': 'I’ll send a follow-up email after the meeting.'}, {'Word': 'formal', 'Meaning': 'Following established conventions', 'Example Usage': 'The event requires formal attire.'}, {'Word': 'generous', 'Meaning': 'Kind or giving', 'Example Usage': 'The tip you left was very generous.'}, {'Word': 'grateful', 'Meaning': 'Feeling thankful', 'Example Usage': 'I’m grateful for your help with the order.'}, {'Word': 'hospitable', 'Meaning': 'Friendly and welcoming', 'Example Usage': 'The staff at the café were very hospitable.'}, {'Word': 'identify', 'Meaning': 'To recognize or name', 'Example Usage': 'Can you identify the issue with the system?'}, {'Word': 'impressive', 'Meaning': 'Admiringly noteworthy', 'Example Usage': 'Your presentation was really impressive.'}, {'Word': 'incentive', 'Meaning': 'A motivating reward', 'Example Usage': 'The bonus is an incentive to meet our targets.'}, {'Word': 'informal', 'Meaning': 'Casual or relaxed', 'Example Usage': 'Let’s have an informal chat over coffee.'}, {'Word': 'innovative', 'Meaning': 'Introducing new ideas', 'Example Usage': 'The team’s innovative approach won the client.'}, {'Word': 'insight', 'Meaning': 'Deep understanding', 'Example Usage': 'Your insight into the problem was helpful.'}, {'Word': 'inspired', 'Meaning': 'Motivated by something', 'Example Usage': 'I was inspired by the team’s enthusiasm.'}, {'Word': 'instruct', 'Meaning': 'To give directions', 'Example Usage': 'Please instruct the team on the new process.'}, {'Word': 'integrate', 'Meaning': 'To combine or incorporate', 'Example Usage': 'We need to integrate the new software.'}, {'Word': 'interactive', 'Meaning': 'Involving active participation', 'Example Usage': 'The workshop was highly interactive.'}, {'Word': 'involved', 'Meaning': 'Participating or engaged', 'Example Usage': 'She’s deeply involved in the project.'}, {'Word': 'judgment', 'Meaning': 'The ability to make decisions', 'Example Usage': 'Use your judgment to prioritize tasks.'}, {'Word': 'kindly', 'Meaning': 'In a kind manner', 'Example Usage': 'Please kindly confirm your attendance.'}, {'Word': 'logical', 'Meaning': 'Based on reason', 'Example Usage': 'Her argument was clear and logical.'}, {'Word': 'loyal', 'Meaning': 'Faithful or devoted', 'Example Usage': 'He’s a loyal customer who visits daily.'}, {'Word': 'maintain', 'Meaning': 'To keep in good condition', 'Example Usage': 'We need to maintain good client relations.'}, {'Word': 'manageable', 'Meaning': 'Able to be handled', 'Example Usage': 'The workload is manageable this week.'}, {'Word': 'mediate', 'Meaning': 'To help resolve a dispute', 'Example Usage': 'She mediated the conflict between colleagues.'}, {'Word': 'minimal', 'Meaning': 'Very small in amount', 'Example Usage': 'The delay caused minimal disruption.'}, {'Word': 'motivate', 'Meaning': 'To inspire action', 'Example Usage': 'His speech motivated the team to work harder.'}, {'Word': 'navigate', 'Meaning': 'To manage or direct', 'Example Usage': 'I’ll navigate the discussion to stay on topic.'}, {'Word': 'noteworthy', 'Meaning': 'Deserving attention', 'Example Usage': 'Her contribution to the project was noteworthy.'}, {'Word': 'objective', 'Meaning': 'An aim or goal', 'Example Usage': 'Our objective is to finish by next week.'}, {'Word': 'obliged', 'Meaning': 'Grateful or indebted', 'Example Usage': 'I’m obliged for your help with the setup.'}, {'Word': 'observant', 'Meaning': 'Quick to notice things', 'Example Usage': 'He’s observant and caught the error early.'}, {'Word': 'on-time', 'Meaning': 'Not late', 'Example Usage': 'The delivery arrived on-time as promised.'}, {'Word': 'open-minded', 'Meaning': 'Willing to consider new ideas', 'Example Usage': 'She’s open-minded about trying new strategies.'}, {'Word': 'optimistic', 'Meaning': 'Hopeful and positive', 'Example Usage': 'I’m optimistic about the project’s success.'}, {'Word': 'organize', 'Meaning': 'To arrange systematically', 'Example Usage': 'Let’s organize a team lunch next week.'}, {'Word': 'outgoing', 'Meaning': 'Friendly and sociable', 'Example Usage': 'He’s outgoing and makes friends easily.'}, {'Word': 'oversee', 'Meaning': 'To supervise', 'Example Usage': 'She’ll oversee the project to ensure quality.'}, {'Word': 'participate', 'Meaning': 'To take part', 'Example Usage': 'I’d love to participate in the team-building event.'}, {'Word': 'persistent', 'Meaning': 'Continuing despite challenges', 'Example Usage': 'His persistent effort led to a breakthrough.'}, {'Word': 'persuade', 'Meaning': 'To convince someone', 'Example Usage': 'I’ll persuade the client to agree to the terms.'}, {'Word': 'pleasantries', 'Meaning': 'Polite small talk', 'Example Usage': 'We exchanged pleasantries before the meeting.'}, {'Word': 'potential', 'Meaning': 'Possibility for success', 'Example Usage': 'She has great potential as a team leader.'}, {'Word': 'practical', 'Meaning': 'Useful in real situations', 'Example Usage': 'The training was practical and easy to apply.'}, {'Word': 'precise', 'Meaning': 'Exact and accurate', 'Example Usage': 'Please be precise when giving instructions.'}, {'Word': 'proceed', 'Meaning': 'To move forward', 'Example Usage': 'Let’s proceed with the plan as discussed.'}, {'Word': 'productive', 'Meaning': 'Achieving results', 'Example Usage': 'The meeting was productive and on-point.'}, {'Word': 'professional', 'Meaning': 'Related to work standards', 'Example Usage': 'Her professional demeanor impressed the client.'}, {'Word': 'promptly', 'Meaning': 'Quickly or on time', 'Example Usage': 'Please respond promptly to the client’s request.'}, {'Word': 'qualified', 'Meaning': 'Having the necessary skills', 'Example Usage': 'He’s qualified to lead the new project.'}, {'Word': 'queue', 'Meaning': 'A line of people waiting', 'Example Usage': 'The queue at the café was short today.'}, {'Word': 'reasonable', 'Meaning': 'Fair or sensible', 'Example Usage': 'The price of the meal was reasonable.'}, {'Word': 'receptive', 'Meaning': 'Open to ideas', 'Example Usage': 'She was receptive to my suggestions.'}, {'Word': 'refer', 'Meaning': 'To mention or direct to', 'Example Usage': 'I’ll refer you to the manager for that issue.'}, {'Word': 'refresh', 'Meaning': 'To renew or energize', 'Example Usage': 'A quick coffee will refresh me for the meeting.'}, {'Word': 'reliable', 'Meaning': 'Consistently trustworthy', 'Example Usage': 'This vendor is reliable for quick deliveries.'}, {'Word': 'remind', 'Meaning': 'To cause to remember', 'Example Usage': 'Can you remind me about the meeting time?'}, {'Word': 'request', 'Meaning': 'To ask for something', 'Example Usage': 'I have a request—can we meet earlier?'}, {'Word': 'reservation', 'Meaning': 'A booking or arrangement', 'Example Usage': 'I made a reservation for six at the restaurant.'}, {'Word': 'respectful', 'Meaning': 'Showing politeness', 'Example Usage': 'He was respectful when addressing the issue.'}, {'Word': 'responsive', 'Meaning': 'Quick to respond', 'Example Usage': 'The team was responsive to the client’s needs.'}, {'Word': 'review', 'Meaning': 'To examine or assess', 'Example Usage': 'Can you review my draft before I submit it?'}, {'Word': 'rushed', 'Meaning': 'Hurried or pressured', 'Example Usage': 'I felt rushed during the busy lunch shift.'}, {'Word': 'savor', 'Meaning': 'To enjoy slowly', 'Example Usage': 'I savored the coffee at the new café.'}, {'Word': 'schedule', 'Meaning': 'A plan of times', 'Example Usage': 'Let’s schedule a call for tomorrow.'}, {'Word': 'seamless', 'Meaning': 'Smooth and without issues', 'Example Usage': 'The event went seamless thanks to the team.'}, {'Word': 'secure', 'Meaning': 'To confirm or obtain', 'Example Usage': 'I’ll secure a table for us at the restaurant.'}, {'Word': 'sensitive', 'Meaning': 'Considerate of feelings', 'Example Usage': 'Be sensitive when discussing her workload.'}, {'Word': 'settle', 'Meaning': 'To resolve or agree', 'Example Usage': 'Let’s settle the payment issue today.'}, {'Word': 'significant', 'Meaning': 'Important or meaningful', 'Example Usage': 'The project had a significant impact on sales.'}, {'Word': 'sincere', 'Meaning': 'Genuine and honest', 'Example Usage': 'His apology was sincere and heartfelt.'}, {'Word': 'specific', 'Meaning': 'Clearly defined', 'Example Usage': 'Can you be specific about the meeting time?'}, {'Word': 'standard', 'Meaning': 'Normal or expected', 'Example Usage': 'This is the standard procedure for refunds.'}, {'Word': 'strategic', 'Meaning': 'Planned for success', 'Example Usage': 'We need a strategic approach to the campaign.'}, {'Word': 'subtle', 'Meaning': 'Not obvious', 'Example Usage': 'Her suggestion was subtle but effective.'}, {'Word': 'suggestive', 'Meaning': 'Hinting at something', 'Example Usage': 'His tone was suggestive of a bigger issue.'}, {'Word': 'summarize', 'Meaning': 'To give a brief overview', 'Example Usage': 'Can you summarize the meeting for me?'}, {'Word': 'supportive', 'Meaning': 'Providing encouragement', 'Example Usage': 'My manager is supportive of my ideas.'}, {'Word': 'synchronize', 'Meaning': 'To align in time', 'Example Usage': 'Let’s synchronize our schedules for the project.'}, {'Word': 'tactful', 'Meaning': 'Considerate in communication', 'Example Usage': 'She was tactful when addressing the error.'}, {'Word': 'takeout', 'Meaning': 'Food to go', 'Example Usage': 'I’ll order takeout from the restaurant tonight.'}, {'Word': 'temporary', 'Meaning': 'Lasting for a short time', 'Example Usage': 'This is a temporary solution until we fix it.'}, {'Word': 'thoughtful', 'Meaning': 'Considerate or reflective', 'Example Usage': 'Her thoughtful gesture made my day.'}, {'Word': 'timely', 'Meaning': 'Done at the right time', 'Example Usage': 'Your timely feedback helped us meet the deadline.'}, {'Word': 'tolerance', 'Meaning': 'Acceptance of differences', 'Example Usage': 'We need tolerance when working with diverse teams.'}, {'Word': 'transition', 'Meaning': 'To change from one state to another', 'Example Usage': 'The team transitioned to the new system smoothly.'}, {'Word': 'trustworthy', 'Meaning': 'Deserving of trust', 'Example Usage': 'He’s a trustworthy colleague for sensitive tasks.'}, {'Word': 'unavailable', 'Meaning': 'Not free or accessible', 'Example Usage': 'The manager is unavailable until tomorrow.'}, {'Word': 'understandable', 'Meaning': 'Clear or reasonable', 'Example Usage': 'Your frustration is understandable given the delay.'}, {'Word': 'unique', 'Meaning': 'One of a kind', 'Example Usage': 'The café has a unique vibe I love.'}, {'Word': 'update', 'Meaning': 'To bring up to date', 'Example Usage': 'Please update the team on the project status.'}, {'Word': 'urgent', 'Meaning': 'Requiring immediate action', 'Example Usage': 'This is an urgent matter—please address it now.'}, {'Word': 'validate', 'Meaning': 'To confirm or verify', 'Example Usage': 'Can you validate my parking ticket?'}, {'Word': 'valuable', 'Meaning': 'Very useful', 'Example Usage': 'Her input was valuable during the discussion.'}, {'Word': 'variety', 'Meaning': 'A range of different things', 'Example Usage': 'The menu offers a variety of options.'}, {'Word': 'vendor', 'Meaning': 'A supplier or seller', 'Example Usage': 'The vendor delivered the supplies on time.'}, {'Word': 'verify', 'Meaning': 'To confirm as true', 'Example Usage': 'Can you verify the order details for me?'}, {'Word': 'vibrant', 'Meaning': 'Lively or energetic', 'Example Usage': 'The mall was vibrant with holiday shoppers.'}, {'Word': 'welcome', 'Meaning': 'To greet warmly', 'Example Usage': 'The staff welcomed us to the restaurant.'}, {'Word': 'well-informed', 'Meaning': 'Knowledgeable', 'Example Usage': 'She’s well-informed about the new policies.'}, {'Word': 'workload', 'Meaning': 'Amount of work assigned', 'Example Usage': 'My workload is heavy this week.'}, {'Word': 'accomplish', 'Meaning': 'To complete successfully', 'Example Usage': 'We accomplished the project ahead of schedule.'}, {'Word': 'accurate', 'Meaning': 'Correct or precise', 'Example Usage': 'Please provide an accurate estimate of the costs.'}, {'Word': 'adjust', 'Meaning': 'To change slightly', 'Example Usage': 'Can you adjust the meeting time to 2 PM?'}, {'Word': 'advise', 'Meaning': 'To offer guidance', 'Example Usage': 'Can you advise me on which laptop to buy?'}, {'Word': 'affable', 'Meaning': 'Friendly and approachable', 'Example Usage': 'The barista was affable and chatty.'}, {'Word': 'alternate', 'Meaning': 'To switch back and forth', 'Example Usage': 'We alternate shifts at the café.'}, {'Word': 'analyze', 'Meaning': 'To examine closely', 'Example Usage': 'Let’s analyze the feedback from the survey.'}, {'Word': 'anticipation', 'Meaning': 'Expectation or excitement', 'Example Usage': 'There’s anticipation for the new store opening.'}, {'Word': 'apparent', 'Meaning': 'Obvious or clear', 'Example Usage': 'It’s apparent we need more staff today.'}, {'Word': 'appraisal', 'Meaning': 'Evaluation or assessment', 'Example Usage': 'The annual appraisal is scheduled for next week.'}, {'Word': 'appropriate', 'Meaning': 'Suitable or proper', 'Example Usage': 'Is this attire appropriate for the meeting?'}, {'Word': 'arrange', 'Meaning': 'To plan or organize', 'Example Usage': 'I’ll arrange a team dinner next week.'}, {'Word': 'assess', 'Meaning': 'To evaluate', 'Example Usage': 'We need to assess the project’s progress.'}, {'Word': 'attentive', 'Meaning': 'Paying close attention', 'Example Usage': 'The waiter was attentive to our needs.'}, {'Word': 'authorize', 'Meaning': 'To give permission', 'Example Usage': 'Can you authorize this expense?'}, {'Word': 'balanced', 'Meaning': 'Fair or even', 'Example Usage': 'Her feedback was balanced and constructive.'}, {'Word': 'bargain', 'Meaning': 'A good deal', 'Example Usage': 'I got a bargain on this jacket at the mall.'}, {'Word': 'benefit', 'Meaning': 'An advantage', 'Example Usage': 'The new policy will benefit the team.'}, {'Word': 'brief', 'Meaning': 'Short and concise', 'Example Usage': 'Keep your presentation brief and to the point.'}, {'Word': 'capable', 'Meaning': 'Able to do something', 'Example Usage': 'She’s capable of leading the project.'}, {'Word': 'category', 'Meaning': 'A group or type', 'Example Usage': 'This item falls under the electronics category.'}, {'Word': 'challenge', 'Meaning': 'A difficult task', 'Example Usage': 'The new project is a challenge but exciting.'}, {'Word': 'circulate', 'Meaning': 'To share or distribute', 'Example Usage': 'Please circulate the meeting notes.'}, {'Word': 'comfortable', 'Meaning': 'At ease', 'Example Usage': 'The café’s seating is very comfortable.'}, {'Word': 'commit', 'Meaning': 'To dedicate or pledge', 'Example Usage': 'I’ll commit to finishing the report by tomorrow.'}, {'Word': 'communicate', 'Meaning': 'To share information', 'Example Usage': 'We need to communicate the changes clearly.'}, {'Word': 'compatible', 'Meaning': 'Working well together', 'Example Usage': 'The new hire is compatible with the team.'}, {'Word': 'competitive', 'Meaning': 'Striving to win or succeed', 'Example Usage': 'The job market is highly competitive.'}, {'Word': 'comprehensive', 'Meaning': 'Thorough and complete', 'Example Usage': 'The report was comprehensive and detailed.'}, {'Word': 'concise', 'Meaning': 'Brief but clear', 'Example Usage': 'Keep your email concise to save time.'}, {'Word': 'confidently', 'Meaning': 'With assurance', 'Example Usage': 'She spoke confidently during the presentation.'}, {'Word': 'considerate', 'Meaning': 'Thoughtful of others', 'Example Usage': 'He was considerate and offered to help.'}, {'Word': 'consistent', 'Meaning': 'Regular or steady', 'Example Usage': 'Her work is consistent and reliable.'}, {'Word': 'consult', 'Meaning': 'To seek advice', 'Example Usage': 'I’ll consult my manager before deciding.'}, {'Word': 'contribute', 'Meaning': 'To add or give', 'Example Usage': 'Everyone should contribute ideas to the project.'}, {'Word': 'coordination', 'Meaning': 'Organizing effectively', 'Example Usage': 'The event required careful coordination.'}, {'Word': 'correct', 'Meaning': 'To fix or rectify', 'Example Usage': 'Can you correct the typo in the document?'}, {'Word': 'creative', 'Meaning': 'Imaginative or original', 'Example Usage': 'We need a creative solution to this issue.'}, {'Word': 'credible', 'Meaning': 'Believable or trustworthy', 'Example Usage': 'The vendor’s offer seems credible.'}, {'Word': 'critical', 'Meaning': 'Very important', 'Example Usage': 'This task is critical to the project’s success.'}, {'Word': 'customized', 'Meaning': 'Tailored to needs', 'Example Usage': 'I ordered a customized coffee blend.'}, {'Word': 'decide', 'Meaning': 'To make a choice', 'Example Usage': 'Let’s decide on a restaurant for dinner.'}, {'Word': 'dedicate', 'Meaning': 'To devote time or effort', 'Example Usage': 'I’ll dedicate this afternoon to the report.'}, {'Word': 'deliver', 'Meaning': 'To provide or hand over', 'Example Usage': 'Can you deliver the package by tomorrow?'}, {'Word': 'depend', 'Meaning': 'To rely on', 'Example Usage': 'I depend on my team for support.'}, {'Word': 'deserve', 'Meaning': 'To be worthy of', 'Example Usage': 'You deserve credit for this success.'}, {'Word': 'detailed', 'Meaning': 'Full of specifics', 'Example Usage': 'Please provide a detailed breakdown of the costs.'}, {'Word': 'determine', 'Meaning': 'To decide or establish', 'Example Usage': 'We need to determine the next steps.'}, {'Word': 'develop', 'Meaning': 'To grow or improve', 'Example Usage': 'Let’s develop a new strategy for the campaign.'}, {'Word': 'direct', 'Meaning': 'Straightforward', 'Example Usage': 'Please be direct when giving feedback.'}, {'Word': 'disappointed', 'Meaning': 'Feeling let down', 'Example Usage': 'I was disappointed with the service today.'}, {'Word': 'discreet', 'Meaning': 'Careful to avoid attention', 'Example Usage': 'Please be discreet about the project details.'}, {'Word': 'discuss', 'Meaning': 'To talk about', 'Example Usage': 'Let’s discuss the plan over coffee.'}, {'Word': 'efficiently', 'Meaning': 'With minimal waste', 'Example Usage': 'The team worked efficiently to meet the deadline.'}, {'Word': 'effort', 'Meaning': 'Hard work or attempt', 'Example Usage': 'Your effort on this project is appreciated.'}, {'Word': 'encouraging', 'Meaning': 'Supportive and motivating', 'Example Usage': 'Her feedback was encouraging and helpful.'}, {'Word': 'ensure', 'Meaning': 'To make certain', 'Example Usage': 'Please ensure the order is correct.'}, {'Word': 'essential', 'Meaning': 'Necessary', 'Example Usage': 'Good communication is essential in teamwork.'}, {'Word': 'evaluate', 'Meaning': 'To assess or judge', 'Example Usage': 'We’ll evaluate the proposal next week.'}, {'Word': 'exceedingly', 'Meaning': 'To a great degree', 'Example Usage': 'The event was exceedingly well-organized.'}, {'Word': 'exchange', 'Meaning': 'To swap or trade', 'Example Usage': 'We exchanged contact info at the networking event.'}, {'Word': 'expect', 'Meaning': 'To anticipate', 'Example Usage': 'I expect the delivery to arrive by noon.'}, {'Word': 'explain', 'Meaning': 'To make clear', 'Example Usage': 'Can you explain the new policy to the team?'}, {'Word': 'express', 'Meaning': 'To convey a thought', 'Example Usage': 'I want to express my thanks for your help.'}, {'Word': 'extend', 'Meaning': 'To offer or prolong', 'Example Usage': 'Can we extend the deadline by a day?'}, {'Word': 'familiarize', 'Meaning': 'To make known', 'Example Usage': 'I’ll familiarize myself with the new system.'}, {'Word': 'feasibility', 'Meaning': 'Possibility of success', 'Example Usage': 'Let’s discuss the feasibility of the plan.'}, {'Word': 'finalize', 'Meaning': 'To complete', 'Example Usage': 'We need to finalize the budget by tomorrow.'}, {'Word': 'flexibility', 'Meaning': 'Ability to adapt', 'Example Usage': 'The job requires flexibility with hours.'}, {'Word': 'focus', 'Meaning': 'To concentrate', 'Example Usage': 'Let’s focus on the main priorities today.'}, {'Word': 'forward', 'Meaning': 'To send on', 'Example Usage': 'I’ll forward the email to the team.'}, {'Word': 'frequently', 'Meaning': 'Often', 'Example Usage': 'I frequently visit the café on weekends.'}, {'Word': 'fulfill', 'Meaning': 'To meet or complete', 'Example Usage': 'The store couldn’t fulfill my order today.'}, {'Word': 'generate', 'Meaning': 'To create or produce', 'Example Usage': 'The campaign will generate new leads.'}, {'Word': 'genuine', 'Meaning': 'Authentic', 'Example Usage': 'Her smile was genuine and welcoming.'}, {'Word': 'goal', 'Meaning': 'An aim or objective', 'Example Usage': 'Our goal is to improve customer satisfaction.'}, {'Word': 'guidance', 'Meaning': 'Advice or direction', 'Example Usage': 'Can you offer guidance on this issue?'}, {'Word': 'handle', 'Meaning': 'To manage or deal with', 'Example Usage': 'I’ll handle the client’s concerns.'}, {'Word': 'helpful', 'Meaning': 'Providing assistance', 'Example Usage': 'Your advice was very helpful.'}, {'Word': 'identify', 'Meaning': 'To recognize', 'Example Usage': 'Can you identify the source of the problem?'}, {'Word': 'implement', 'Meaning': 'To put into action', 'Example Usage': 'We’ll implement the new policy next month.'}, {'Word': 'improve', 'Meaning': 'To make better', 'Example Usage': 'Let’s improve the process for efficiency.'}, {'Word': 'inclusion', 'Meaning': 'Act of including', 'Example Usage': 'We value inclusion in our team discussions.'}, {'Word': 'independent', 'Meaning': 'Self-reliant', 'Example Usage': 'She’s an independent worker who gets things done.'}, {'Word': 'inform', 'Meaning': 'To tell or notify', 'Example Usage': 'Please inform me when the order arrives.'}, {'Word': 'initiative', 'Meaning': 'Proactive action', 'Example Usage': 'Taking initiative will impress your manager.'}, {'Word': 'input', 'Meaning': 'Contribution or opinion', 'Example Usage': 'I’d appreciate your input on the design.'}, {'Word': 'inquire', 'Meaning': 'To ask', 'Example Usage': 'Can I inquire about the menu options?'}, {'Word': 'install', 'Meaning': 'To set up', 'Example Usage': 'They’ll install the new software tomorrow.'}, {'Word': 'instant', 'Meaning': 'Immediate', 'Example Usage': 'The barista made my coffee in an instant.'}, {'Word': 'integrating', 'Meaning': 'Combining into a whole', 'Example Usage': 'Integrating feedback improved the project.'}, {'Word': 'intended', 'Meaning': 'Planned or meant', 'Example Usage': 'The email was intended for the whole team.'}, {'Word': 'introduce', 'Meaning': 'To present', 'Example Usage': 'Let me introduce you to my colleague.'}, {'Word': 'involved', 'Meaning': 'Participating', 'Example Usage': 'Who’s involved in the new project?'}, {'Word': 'issue', 'Meaning': 'A problem', 'Example Usage': 'There’s an issue with the payment system.'}, {'Word': 'justify', 'Meaning': 'To explain or defend', 'Example Usage': 'Can you justify the budget increase?'}, {'Word': 'knowledgeable', 'Meaning': 'Well-informed', 'Example Usage': 'The staff was knowledgeable about the products.'}, {'Word': 'logical', 'Meaning': 'Reasonable', 'Example Usage': 'Her suggestion was logical and practical.'}, {'Word': 'maintain', 'Meaning': 'To keep up', 'Example Usage': 'We need to maintain good customer relations.'}, {'Word': 'manage', 'Meaning': 'To oversee', 'Example Usage': 'She manages the team effectively.'}, {'Word': 'mediate', 'Meaning': 'To resolve disputes', 'Example Usage': 'He mediated the disagreement between coworkers.'}, {'Word': 'minimize', 'Meaning': 'To reduce', 'Example Usage': 'Let’s minimize delays by planning ahead.'}, {'Word': 'monitor', 'Meaning': 'To observe or track', 'Example Usage': 'I’ll monitor the project’s progress.'}, {'Word': 'motivated', 'Meaning': 'Driven to act', 'Example Usage': 'The team is motivated to meet the deadline.'}, {'Word': 'negotiate', 'Meaning': 'To discuss for agreement', 'Example Usage': 'We’ll negotiate the contract terms.'}, {'Word': 'neutral', 'Meaning': 'Unbiased', 'Example Usage': 'Let’s keep the discussion neutral and fair.'}, {'Word': 'notify', 'Meaning': 'To inform', 'Example Usage': 'Please notify me when the meeting starts.'}, {'Word': 'objective', 'Meaning': 'Unbiased goal', 'Example Usage': 'Our objective is to increase sales by 10%.'}, {'Word': 'observe', 'Meaning': 'To notice', 'Example Usage': 'I observed a mistake in the report.'}, {'Word': 'obtain', 'Meaning': 'To acquire', 'Example Usage': 'I need to obtain approval for the expense.'}, {'Word': 'offer', 'Meaning': 'To provide', 'Example Usage': 'Can you offer a discount on this item?'}, {'Word': 'ongoing', 'Meaning': 'Continuing', 'Example Usage': 'The project is ongoing and needs attention.'}, {'Word': 'operate', 'Meaning': 'To function or manage', 'Example Usage': 'Who operates the café on weekends?'}, {'Word': 'opportunity', 'Meaning': ' A chance', 'Example Usage': 'This is an opportunity to learn new skills.'}, {'Word': 'optimize', 'Meaning': 'To make the best use of', 'Example Usage': 'We’ll optimize the schedule for efficiency.'}, {'Word': 'organizational', 'Meaning': 'Related to planning', 'Example Usage': 'Her organizational skills are impressive.'}, {'Word': 'outline', 'Meaning': 'A summary or plan', 'Example Usage': 'Please outline the project’s key points.'}, {'Word': 'outstanding', 'Meaning': 'Exceptional', 'Example Usage': 'Your work on this task was outstanding.'}, {'Word': 'overcome', 'Meaning': 'To succeed despite challenges', 'Example Usage': 'We’ll overcome the budget constraints.'}, {'Word': 'pace', 'Meaning': 'Speed or rate', 'Example Usage': 'The project is moving at a good pace.'}, {'Word': 'participation', 'Meaning': 'Involvement', 'Example Usage': 'Your participation in the meeting is appreciated.'}, {'Word': 'partnership', 'Meaning': 'Collaboration', 'Example Usage': 'The partnership with the vendor is working well.'}, {'Word': 'persevere', 'Meaning': 'To continue despite difficulty', 'Example Usage': 'Let’s persevere to meet the deadline.'}, {'Word': 'perspective', 'Meaning': 'Point of view', 'Example Usage': 'Her perspective on the issue was insightful.'}, {'Word': 'plan', 'Meaning': 'To organize in advance', 'Example Usage': 'Let’s plan the team outing for next week.'}, {'Word': 'pleasant', 'Meaning': 'Enjoyable', 'Example Usage': 'The conversation with the barista was pleasant.'}, {'Word': 'potential', 'Meaning': 'Capability', 'Example Usage': 'This idea has great potential for success.'}, {'Word': 'precise', 'Meaning': 'Accurate', 'Example Usage': 'Please provide precise measurements for the order.'}, {'Word': 'present', 'Meaning': 'To show or offer', 'Example Usage': 'I’ll present the proposal to the team.'}, {'Word': 'prioritize', 'Meaning': 'To rank in importance', 'Example Usage': 'We need to prioritize customer feedback.'}, {'Word': 'proceed', 'Meaning': 'To move forward', 'Example Usage': 'Let’s proceed with the event planning.'}, {'Word': 'productive', 'Meaning': 'Achieving results', 'Example Usage': 'The discussion was productive and focused.'}, {'Word': 'progress', 'Meaning': 'Advancement', 'Example Usage': 'The project is making good progress.'}, {'Word': 'prompt', 'Meaning': 'Quick', 'Example Usage': 'Your prompt reply is appreciated.'}, {'Word': 'propose', 'Meaning': 'To suggest', 'Example Usage': 'I propose we meet at the café.'}, {'Word': 'proven', 'Meaning': 'Established as effective', 'Example Usage': 'This is a proven method for success.'}, {'Word': 'provide', 'Meaning': 'To supply', 'Example Usage': 'Can you provide more details about the event?'}, {'Word': 'purchase', 'Meaning': 'To buy', 'Example Usage': 'I’ll purchase the tickets online.'}, {'Word': 'qualified', 'Meaning': 'Suitable', 'Example Usage': 'She’s qualified for the managerial role.'}, {'Word': 'quality', 'Meaning': 'High standard', 'Example Usage': 'The quality of the food was excellent.'}, {'Word': 'question', 'Meaning': 'To ask', 'Example Usage': 'Can I question the pricing on this item?'}, {'Word': 'quick', 'Meaning': 'Fast', 'Example Usage': 'The barista was quick with my order.'}, {'Word': 'range', 'Meaning': 'A variety', 'Example Usage': 'The store offers a range of products.'}, {'Word': 'realistic', 'Meaning': 'Practical', 'Example Usage': 'Let’s set realistic goals for the project.'}, {'Word': 'receive', 'Meaning': 'To get', 'Example Usage': 'Did you receive the email I sent?'}, {'Word': 'recommendation', 'Meaning': 'Suggestion', 'Example Usage': 'Her recommendation for the restaurant was spot-on.'}, {'Word': 'record', 'Meaning': 'To document', 'Example Usage': 'Please record the meeting minutes.'}, {'Word': 'recover', 'Meaning': 'To regain', 'Example Usage': 'We’ll recover the costs with this deal.'}, {'Word': 'reduce', 'Meaning': 'To decrease', 'Example Usage': 'Let’s reduce the number of meetings.'}, {'Word': 'reference', 'Meaning': 'A mention', 'Example Usage': 'He made a reference to the new policy.'}, {'Word': 'reflect', 'Meaning': 'To think back', 'Example Usage': 'I’ll reflect on your feedback before deciding.'}, {'Word': 'refreshing', 'Meaning': 'Pleasantly new', 'Example Usage': 'The new café’s vibe is refreshing.'}, {'Word': 'regular', 'Meaning': 'Usual or frequent', 'Example Usage': 'I’m a regular at this coffee shop.'}, {'Word': 'relevant', 'Meaning': 'Related to the topic', 'Example Usage': 'Your comment is relevant to the discussion.'}, {'Word': 'reliable', 'Meaning': 'Trustworthy', 'Example Usage': 'The delivery service is reliable.'}, {'Word': 'relocate', 'Meaning': 'To move', 'Example Usage': 'The store relocated to the new mall.'}, {'Word': 'reminder', 'Meaning': 'A prompt to remember', 'Example Usage': 'Thanks for the reminder about the meeting.'}, {'Word': 'repair', 'Meaning': 'To fix', 'Example Usage': 'Can you repair the issue with my order?'}, {'Word': 'replace', 'Meaning': 'To substitute', 'Example Usage': 'We’ll replace the damaged item free of charge.'}, {'Word': 'report', 'Meaning': 'To inform or document', 'Example Usage': 'I’ll report the issue to the manager.'}, {'Word': 'request', 'Meaning': 'Asking for something', 'Example Usage': 'I have a request for a later delivery time.'}, {'Word': 'require', 'Meaning': 'To need', 'Example Usage': 'This task will require extra effort.'}, {'Word': 'resolve', 'Meaning': 'To solve', 'Example Usage': 'We’ll resolve the conflict by tomorrow.'}, {'Word': 'resource', 'Meaning': 'A useful asset', 'Example Usage': 'The team is a valuable resource for this project.'}, {'Word': 'respect', 'Meaning': 'Admiration or regard', 'Example Usage': 'I respect your decision to prioritize this.'}, {'Word': 'respond', 'Meaning': 'To reply', 'Example Usage': 'Please respond to the client’s email soon.'}, {'Word': 'responsible', 'Meaning': 'Accountable', 'Example Usage': 'Who’s responsible for this task?'}, {'Word': 'restore', 'Meaning': 'To bring back', 'Example Usage': 'We’ll restore the system by tonight.'}, {'Word': 'result', 'Meaning': 'Outcome', 'Example Usage': 'The result of the meeting was positive.'}, {'Word': 'resume', 'Meaning': 'To continue', 'Example Usage': 'Let’s resume the discussion tomorrow.'}, {'Word': 'retain', 'Meaning': 'To keep', 'Example Usage': 'We aim to retain our top employees.'}, {'Word': 'review', 'Meaning': 'To examine', 'Example Usage': 'Please review the contract before signing.'}, {'Word': 'rewarding', 'Meaning': 'Satisfying', 'Example Usage': 'Working on this project was rewarding.'}, {'Word': 'risk', 'Meaning': 'A chance of loss', 'Example Usage': 'There’s a risk if we miss the deadline.'}, {'Word': 'role', 'Meaning': 'Position or function', 'Example Usage': 'What’s your role in the team?'}, {'Word': 'routine', 'Meaning': 'Regular procedure', 'Example Usage': 'My morning routine includes coffee.'}, {'Word': 'satisfied', 'Meaning': 'Pleased', 'Example Usage': 'I’m satisfied with the service today.'}, {'Word': 'save', 'Meaning': 'To keep or reserve', 'Example Usage': 'Can you save a table for us?'}, {'Word': 'scale', 'Meaning': 'To adjust in size', 'Example Usage': 'We’ll scale the project to fit the budget.'}, {'Word': 'schedule', 'Meaning': 'To plan timing', 'Example Usage': 'Let’s schedule a follow-up next week.'}, {'Word': 'secure', 'Meaning': 'Safe or confirmed', 'Example Usage': 'I’ll secure a spot for the workshop.'}, {'Word': 'seek', 'Meaning': 'To look for', 'Example Usage': 'I’m seeking advice on this issue.'}, {'Word': 'select', 'Meaning': 'To choose', 'Example Usage': 'Please select an option from the menu.'}, {'Word': 'sensitive', 'Meaning': 'Delicate or emotional', 'Example Usage': 'Be sensitive when discussing her situation.'}, {'Word': 'serve', 'Meaning': 'To provide or assist', 'Example Usage': 'The waiter served us quickly.'}, {'Word': 'settle', 'Meaning': 'To resolve', 'Example Usage': 'Let’s settle this issue before the meeting.'}, {'Word': 'share', 'Meaning': 'To distribute', 'Example Usage': 'Please share the notes with the team.'}, {'Word': 'significant', 'Meaning': 'Important', 'Example Usage': 'This change will have a significant impact.'}, {'Word': 'simplify', 'Meaning': 'To make easier', 'Example Usage': 'Let’s simplify the process for customers.'}, {'Word': 'sincere', 'Meaning': 'Honest', 'Example Usage': 'Her compliment felt sincere and kind.'}, {'Word': 'solution', 'Meaning': 'Answer to a problem', 'Example Usage': 'We found a solution to the scheduling issue.'}, {'Word': 'specific', 'Meaning': 'Particular', 'Example Usage': 'Can you be specific about your requirements?'}, {'Word': 'standardize', 'Meaning': 'To make consistent', 'Example Usage': 'We’ll standardize the reporting format.'}, {'Word': 'strategy', 'Meaning': ' A plan', 'Example Usage': 'Our strategy is to focus on customer service.'}, {'Word': 'streamlined', 'Meaning': 'Efficient', 'Example Usage': 'The streamlined process saved us time.'}, {'Word': 'submit', 'Meaning': 'To present', 'Example Usage': 'Please submit your report by Friday.'}, {'Word': 'succeed', 'Meaning': 'To achieve a goal', 'Example Usage': 'I’m confident the team will succeed.'}, {'Word': 'sufficient', 'Meaning': 'Enough', 'Example Usage': 'We have sufficient resources for the project.'}, {'Word': 'suggest', 'Meaning': 'To propose', 'Example Usage': 'I suggest we try the new café.'}, {'Word': 'summarize', 'Meaning': 'To give a brief overview', 'Example Usage': 'Can you summarize the key points?'}, {'Word': 'support', 'Meaning': 'To assist', 'Example Usage': 'I’ll support you during the presentation.'}, {'Word': 'synchronize', 'Meaning': 'To align', 'Example Usage': 'Let’s synchronize our calendars for the meeting.'}, {'Word': 'systematic', 'Meaning': 'Organized', 'Example Usage': 'We need a systematic approach to this task.'}, {'Word': 'tact', 'Meaning': 'Diplomacy', 'Example Usage': 'She handled the situation with tact.'}, {'Word': 'target', 'Meaning': 'Goal or aim', 'Example Usage': 'Our target is to finish by next week.'}, {'Word': 'teamwork', 'Meaning': 'Collaborative effort', 'Example Usage': 'Good teamwork led to our success.'}, {'Word': 'temporary', 'Meaning': 'Short-term', 'Example Usage': 'This is a temporary fix for the issue.'}, {'Word': 'thankful', 'Meaning': 'Grateful', 'Example Usage': 'I’m thankful for your quick response.'}, {'Word': 'thorough', 'Meaning': 'Complete and detailed', 'Example Usage': 'The review was thorough and helpful.'}, {'Word': 'timely', 'Meaning': 'On time', 'Example Usage': 'Your timely arrival helped start the meeting.'}, {'Word': 'tolerant', 'Meaning': 'Accepting', 'Example Usage': 'We should be tolerant of different opinions.'}, {'Word': 'transparent', 'Meaning': 'Open', 'Example Usage': 'The manager was transparent about the changes.'}, {'Word': 'trend', 'Meaning': 'Current style', 'Example Usage': 'The café follows the latest coffee trends.'}, {'Word': 'trust', 'Meaning': 'Confidence in someone', 'Example Usage': 'I trust the team to handle this.'}, {'Word': 'unique', 'Meaning': 'Distinctive', 'Example Usage': 'The store has a unique selection of items.'}, {'Word': 'update', 'Meaning': 'Latest information', 'Example Usage': 'Please give me an update on the order.'}, {'Word': 'upgrade', 'Meaning': 'To improve', 'Example Usage': 'We’ll upgrade the system next week.'}, {'Word': 'urgent', 'Meaning': 'Needing immediate attention', 'Example Usage': 'This is an urgent request—please respond.'}, {'Word': 'validate', 'Meaning': 'To confirm', 'Example Usage': 'Can you validate my ticket at the counter?'}, {'Word': 'value', 'Meaning': 'To appreciate', 'Example Usage': 'We value your feedback on the service.'}, {'Word': 'verify', 'Meaning': 'To check', 'Example Usage': 'Please verify the details before sending.'}, {'Word': 'vibrant', 'Meaning': 'Full of energy', 'Example Usage': 'The mall was vibrant with shoppers.'}, {'Word': 'vision', 'Meaning': 'Future plan', 'Example Usage': 'Her vision for the project is inspiring.'}, {'Word': 'welcome', 'Meaning': 'To greet', 'Example Usage': 'The staff welcomed us to the store.'}, {'Word': 'well-prepared', 'Meaning': 'Ready', 'Example Usage': 'She was well-prepared for the meeting.'}, {'Word': 'workplace', 'Meaning': 'Place of work', 'Example Usage': 'The workplace has a great atmosphere.'}];
+
+    // Fisher–Yates shuffle
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    // Lightweight CSV parser (fallback when user loads a file or hosts words.csv)
+    function parseCSV(text) {
+      const lines = text.split(/\r?\n/).filter(Boolean);
+      if (!lines.length) return [];
+      const heads = lines[0].split(',').map(h => h.trim());
+      const idxW = heads.findIndex(h => /^(word)$/i.test(h));
+      const idxM = heads.findIndex(h => /^(meaning)$/i.test(h));
+      const idxE = heads.findIndex(h => /^(example\s*usage)$/i.test(h));
+      return lines.slice(1).map(line => {
+        const cells = line.split(',');
+        return {
+          "Word": cells[idxW] ? cells[idxW].trim() : "",
+          "Meaning": cells[idxM] ? cells[idxM].trim() : "",
+          "Example Usage": cells[idxE] ? cells[idxE].trim() : "",
+        };
+      }).filter(r => r.Word && r.Meaning);
+    }
+
+    let deck = [];
+    let cursor = 0;
+    let known = 0;
+
+    const card = document.getElementById('card');
+    const wordText = document.getElementById('wordText');
+    const meaningText = document.getElementById('meaningText');
+    const exampleText = document.getElementById('exampleText');
+    const counter = document.getElementById('counter');
+    const bar = document.getElementById('bar');
+    const bar2 = document.getElementById('bar2');
+    const knowBtn = document.getElementById('knowBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const nextBtn2 = document.getElementById('nextBtn2');
+    const againBtn = document.getElementById('againBtn');
+    const fileInput = document.getElementById('fileInput');
+    const knownCount = document.getElementById('knownCount');
+
+    function setProgress() {
+      const pct = deck.length ? Math.min(100, Math.round(((cursor) / deck.length) * 100)) : 0;
+      bar.style.width = pct + '%';
+      bar2.style.width = pct + '%';
+      counter.textContent = `${Math.min(cursor+1, deck.length)} / ${deck.length}`;
+      knownCount.textContent = known;
+    }
+
+    function show(i) {
+      if (!deck.length) return;
+      const item = deck[i];
+      wordText.textContent = item["Word"];
+      meaningText.textContent = item["Meaning"];
+      const ex = item["Example Usage"];
+      exampleText.innerHTML = ex ? `<b>Example:</b> ${
+        // escape HTML
+        ex.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))
+      }` : "";
+      setProgress();
+    }
+
+    function flip() { card.classList.toggle('flipped'); }
+    function ensureFront() { card.classList.remove('flipped'); }
+
+    function next() {
+      if (!deck.length) return;
+      cursor = (cursor + 1);
+      if (cursor >= deck.length) cursor = deck.length - 1;
+      ensureFront();
+      show(cursor);
+    }
+
+    function resetDeck(data) {
+      deck = shuffle([...data]);
+      cursor = 0;
+      known = 0;
+      ensureFront();
+      show(cursor);
+    }
+
+    // Actions
+    knowBtn.addEventListener('click', () => { known++; next(); });
+    nextBtn.addEventListener('click', next);
+    nextBtn2.addEventListener('click', next);
+    againBtn.addEventListener('click', ensureFront);
+    document.getElementById('shuffle').addEventListener('click', () => resetDeck(deck));
+    document.getElementById('reset').addEventListener('click', () => resetDeck(WORDS && WORDS.length ? WORDS : deck));
+
+    // Card interactions
+    card.addEventListener('click', (e) => {
+      // avoid flipping when clicking explicit buttons
+      if (e.target.closest('button')) return;
+      flip();
+    });
+    card.addEventListener('keyup', (e) => {
+      if (e.code === 'Space') flip();
+      if (e.code === 'ArrowRight') next();
+      if (e.key.toLowerCase && e.key.toLowerCase() === 'k') { known++; next(); }
+    });
+    card.setAttribute('tabindex', '0');
+
+    // File loader (optional)
+    fileInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const text = await file.text();
+      const parsed = parseCSV(text);
+      if (parsed.length) resetDeck(parsed);
+      else alert('Could not read that CSV. Make sure it has columns: Word, Meaning, Example Usage');
+    });
+
+    // Try runtime fetch 'words.csv' if embedded array is empty (for when you host the HTML alongside words.csv)
+    async function tryFetchWords() {
+      if (WORDS && WORDS.length) return WORDS;
+      try {
+        const res = await fetch('words.csv');
+        if (!res.ok) throw new Error('No words.csv available');
+        const text = await res.text();
+        const parsed = parseCSV(text);
+        if (parsed.length) return parsed;
+      } catch(e) {}
+      return [];
+    }
+
+    (async function init() {
+      const data = (WORDS && WORDS.length) ? WORDS : await tryFetchWords();
+      if (!data.length) {
+        document.getElementById('wordText').textContent = 'Add words via Load CSV';
+        document.getElementById('meaningText').textContent = 'Use the button below to import your file.';
+      }
+      resetDeck(data);
+    })();
+  </script>
+</body>
+</html>
